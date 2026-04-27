@@ -20,9 +20,12 @@ CSS
 Backend: Node.js,Express.js,MongoDB,JWT Authentication,Socket.io (Real-time updates)
 
 ⚙️ Installation & Setup
+
 1️⃣ Clone the Repository
+
 git clone https://github.com/Srushtipatel14/task-manage.git
 cd <project-folder>
+
 🔹 Backend Setup
 cd backend
 npm install
@@ -40,6 +43,8 @@ node index.js
 Create a .env file inside backend
 
 🔹 Frontend Setup
+
+craete .env.local in frontend folder
 
 cd frontend
 npm install
