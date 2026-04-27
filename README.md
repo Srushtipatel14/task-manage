@@ -21,7 +21,7 @@ Backend: Node.js,Express.js,MongoDB,JWT Authentication,Socket.io (Real-time upda
 
 ⚙️ Installation & Setup
 1️⃣ Clone the Repository
-git clone <your-repo-url>
+git clone https://github.com/Srushtipatel14/task-manage.git
 cd <project-folder>
 🔹 Backend Setup
 cd backend
