@@ -3,13 +3,14 @@
 import "../../css/task.css";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
 import axios from "axios";
 import { Modal, Button, Form } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { API_USER_URL, API_ADMIN_URL, API_AUTH_URL } from "../../utils/config";
 import { toast, ToastContainer } from "react-toastify";
-import { socket } from "../../utils/socket";
+import { getSocket } from "../../utils/socket";
+import { FaRegBell } from "react-icons/fa6";
+
 
 interface TaskForm {
   title: string;
@@ -22,31 +23,46 @@ export default function Dashboard() {
 
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<any[]>([]);
+  const [notification, setNotification] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
+  const [notiModal, setIsNotiModal] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState<Partial<TaskForm>>({});
   const [users, setUsers] = useState<any[]>([]);
 
+ useEffect(() => {
+  if (typeof window === "undefined") return;
 
-  useEffect(() => {
-    const userCookie = Cookies.get("logged_user");
-    if (!userCookie) return;
+  const userCookie = localStorage.getItem("logged_user");
+  if (!userCookie) return;
 
-    const parsedUser = JSON.parse(userCookie);
-    socket.emit("join", parsedUser.id);
-    socket.on("task:assigned", (task) => {
-      toast.success(`New Task Assigned: ${task.title}`);
-      setTasks((prev) => [task, ...prev]);
-    });
+  const parsedUser = JSON.parse(userCookie);
 
-    return () => {
-      socket.off("task:assigned");
-    };
-  }, []);
+  const socket = getSocket(); // ✅ IMPORTANT
+  if (!socket) return;
+
+  // join room
+  socket.emit("join", parsedUser.id);
+
+  // 🔔 notification listener
+  socket.on("notification:new", (notification) => {
+    setNotification((prev) => [notification, ...prev]);
+  });
+
+  // 📌 task listener
+  socket.on("task:assigned", (task) => {
+    setTasks((prev) => [task, ...prev]);
+  });
+
+  return () => {
+    socket.off("notification:new");
+    socket.off("task:assigned");
+  };
+}, []);
 
   useEffect(() => {
     const init = async () => {
-      const userCookie = Cookies.get("logged_user");
+      const userCookie = localStorage.getItem("logged_user");
 
       if (!userCookie) {
         return router.push("/signin");
@@ -57,19 +73,21 @@ export default function Dashboard() {
         setUser(parsedUser);
 
         let res;
-
         if (parsedUser.role === "admin") {
           res = await axios.get(`${API_ADMIN_URL}/getalltask`, {
             withCredentials: true,
           });
+          if (res?.data.success) {
+            setTasks(res.data.data);
+          }
         } else {
           res = await axios.get(`${API_USER_URL}/getalltask`, {
             withCredentials: true,
           });
-        }
-
-        if (res?.data.success) {
-          setTasks(res.data.data);
+          if (res?.data.success) {
+            setTasks(res.data.data.tasks);
+            setNotification(res.data.data.notifications)
+          }
         }
       } catch (err) {
         router.push("/signin");
@@ -77,7 +95,6 @@ export default function Dashboard() {
         setLoading(false);
       }
     };
-
     init();
   }, []);
 
@@ -103,7 +120,7 @@ export default function Dashboard() {
         withCredentials: true,
       });
 
-      Cookies.remove("logged_user");
+      localStorage.removeItem("logged_user");
       router.push("/signin");
 
     } catch (err: any) {
@@ -160,6 +177,24 @@ export default function Dashboard() {
     }
   };
 
+  const openNotificationHandle = async () => {
+    try {
+      setIsNotiModal(false);
+      await axios.patch(`${API_USER_URL}/notiread`, {}, {
+        withCredentials: true
+      });
+      setNotification((prev) =>
+        prev.map((item) => ({
+          ...item,
+          isRead: true
+        }))
+      );
+    } catch (err: any) {
+      const message = err?.response?.data?.message || err?.message || "Something went wrong";
+      toast.error(message);
+    }
+  }
+
   if (loading) {
     return (
       <div className="loader-container">
@@ -174,13 +209,20 @@ export default function Dashboard() {
       <div className="dashboard-title">
         <h1 >Task Dashboard</h1>
         <div className="btnp">
-          <button onClick={openModal}>Add Task</button>
+          {user.role === 'admin' ? (
+            <button onClick={openModal}>Add Task</button>
+          ) : (
+            <div className="notiCount">
+              <div>{notification.filter(n => !n.isRead).length}</div>
+              <FaRegBell onClick={() => setIsNotiModal(true)} size={28} />
+            </div>
+          )}
           <button onClick={handleLogout}>Logout</button>
         </div>
       </div>
 
       {tasks.length === 0 ? (
-        <p className="no-task">No tasks found</p>
+        <div className="no-task">No tasks found</div>
       ) : (
         <table className="task-table">
           <thead>
@@ -203,7 +245,6 @@ export default function Dashboard() {
                 {user.role === 'admin' && (
                   <td>{task.assignedTo?.email}</td>
                 )}
-
                 {user.role === 'user' ? (
                   <td>
                     <select
@@ -289,6 +330,21 @@ export default function Dashboard() {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      <Modal show={notiModal} onHide={openNotificationHandle}>
+        <Modal.Header closeButton>
+          <Modal.Title>Notifications</Modal.Title>
+        </Modal.Header>
+
+        <Modal.Body>
+          <div className="noti">
+            {notification.map((item) => (
+              <div style={{backgroundColor:item.isRead?"#d8d6f1":"#9590e2"}} key={item._id}>{item.message}</div>
+            ))}
+          </div>
+        </Modal.Body>
+      </Modal>
     </div>
   );
 }
+

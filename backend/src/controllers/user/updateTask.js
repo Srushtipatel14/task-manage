@@ -22,7 +22,7 @@ const updateTaskStatus = async (req, res, next) => {
     });
 
   } catch (error) {
-    return next(new ErrorHandler("Something went wrong", 500));
+   return next(new ErrorHandler("Something went wrong", 500));
   }
 };
 

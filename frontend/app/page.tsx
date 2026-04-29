@@ -2,21 +2,41 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
-import Task from "./components/task/task";
+import Task from "../components/task/task";
+import { API_AUTH_URL } from "@/utils/config";
+import axios from "axios";
 
 export default function HomePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const user = Cookies.get("logged_user");
+  const getUser = () => {
+    const cached = localStorage.getItem('logged_user');
+    if (!cached) return null;
+    return JSON.parse(cached); 
+  };
 
-    if (!user) {
+  const initAuth = async () => {
+    const cached = getUser();
+    if (!cached) {
       router.push("/signin");
-    } else {
-      setLoading(false);
+      return;
     }
+
+    const res = await axios.get(`${API_AUTH_URL}/me`, { withCredentials:true });
+
+    if (!res.data.success) {
+      localStorage.removeItem('logged_user'); 
+      router.push("/signin");
+      return;
+    }
+    localStorage.setItem('logged_user', JSON.stringify(res.data.data));
+    setLoading(false);
+  };
+
+
+  useEffect(() => {
+    initAuth();
   }, []);
 
   if (loading) {
@@ -26,5 +46,6 @@ export default function HomePage() {
       </div>
     );
   }
+
   return <Task />;
 }

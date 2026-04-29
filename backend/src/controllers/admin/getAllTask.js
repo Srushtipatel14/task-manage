@@ -3,7 +3,7 @@ const ErrorHandler = require("../../helpers/errors/errorHandler");
 
 const getTasks = async (req, res, next) => {
     try {
-        const tasks = await Task.find().populate("assignedTo", "name email")
+        const tasks = await Task.find().populate("assignedTo", "name email").sort({ createdAt: -1 })
         return res.status(200).json({
             success: true,
             count: tasks.length,

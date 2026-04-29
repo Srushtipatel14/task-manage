@@ -6,7 +6,6 @@ import { API_AUTH_URL } from "../../utils/config";
 import { toast, ToastContainer } from "react-toastify";
 import { useState } from "react";
 import axios from "axios";
-import Cookies from "js-cookie";
 
 const Signup = () => {
   const router = useRouter();
@@ -30,7 +29,7 @@ const Signup = () => {
           email: resVal.email,
           role: resVal.role
         }
-        Cookies.set("logged_user", JSON.stringify(val), { expires: 1 });
+        localStorage.setItem("logged_user", JSON.stringify(val));
         router.push("/");
       }
     } catch (err: any) {

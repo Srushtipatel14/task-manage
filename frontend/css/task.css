@@ -77,3 +77,46 @@
     transform: rotate(360deg);
   }
 }
+
+.no-task{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+  font-size: 24px;
+  color: #4f46e5;
+}
+
+
+.notiCount {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.notiCount div {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+
+  background-color: red;
+  color: white;
+
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.noti div {
+  padding: 8px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
